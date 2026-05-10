@@ -1,16 +1,10 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { AdvancedRealTimeChart } from "react-ts-tradingview-widgets";
 
 function App() {
 
-  const [symbol, setSymbol] = useState("GC=F");
+  const [symbol, setSymbol] = useState("BTC-USD");
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  // YOUR LIVE RENDER BACKEND
-  const API_URL =
-    "https://ai-stock-predictor-yhdz.onrender.com";
 
   const chartSymbols = {
     "GC=F": "COMEX:GC1!",
@@ -23,22 +17,14 @@ function App() {
 
     try {
 
-      setLoading(true);
-
       const response = await axios.get(
-        `${API_URL}/predict/${symbol}`
+        `https://ai-stock-predictor-yhdz.onrender.com/predict/${symbol}`
       );
 
       setData(response.data);
 
     } catch (error) {
-
       console.log(error);
-
-    } finally {
-
-      setLoading(false);
-
     }
   };
 
@@ -54,234 +40,169 @@ function App() {
 
   }, [symbol]);
 
+  useEffect(() => {
+
+    const script = document.createElement("script");
+
+    script.src =
+      "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+
+    script.type = "text/javascript";
+    script.async = true;
+
+    script.innerHTML = JSON.stringify({
+      autosize: true,
+      symbol: chartSymbols[symbol],
+      interval: "15",
+      timezone: "Asia/Kolkata",
+      theme: "dark",
+      style: "1",
+      locale: "en",
+      enable_publishing: false,
+      allow_symbol_change: true,
+      container_id: "tradingview_chart"
+    });
+
+    const container = document.getElementById("tradingview_chart");
+
+    if (container) {
+      container.innerHTML = "";
+      container.appendChild(script);
+    }
+
+  }, [symbol]);
+
   return (
 
     <div className="min-h-screen bg-black text-white p-6">
 
-      <div className="max-w-7xl mx-auto">
+      <h1 className="text-4xl font-bold mb-8 text-center">
+        AI Trading Dashboard
+      </h1>
 
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+      <div className="flex justify-center mb-8">
 
-          <div>
+        <select
+          value={symbol}
+          onChange={(e) => setSymbol(e.target.value)}
+          className="bg-gray-800 p-3 rounded text-white"
+        >
 
-            <h1 className="text-5xl font-bold text-yellow-400">
-              AI Trading Dashboard
-            </h1>
+          <option value="BTC-USD">Bitcoin</option>
+          <option value="ETH-USD">Ethereum</option>
+          <option value="GC=F">Gold</option>
+          <option value="SI=F">Silver</option>
 
-            <p className="text-gray-400 mt-2">
-              Live Market Analysis with AI Predictions
-            </p>
+        </select>
 
-          </div>
+      </div>
 
-          <select
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
-            className="bg-gray-900 border border-gray-700 p-3 rounded-xl mt-5 lg:mt-0"
-          >
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-            <option value="GC=F">Gold</option>
-            <option value="SI=F">Silver</option>
-            <option value="BTC-USD">Bitcoin</option>
-            <option value="ETH-USD">Ethereum</option>
+        <div className="bg-gray-900 rounded-xl overflow-hidden">
 
-          </select>
+          <div
+            id="tradingview_chart"
+            style={{ height: "600px", width: "100%" }}
+          ></div>
 
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {data && (
 
-          {/* CHART */}
+          <div className="bg-gray-900 p-6 rounded-xl">
 
-          <div className="bg-gray-900 p-4 rounded-2xl shadow-2xl">
+            <div className="mb-6">
 
-            <AdvancedRealTimeChart
-              theme="dark"
-              symbol={chartSymbols[symbol]}
-              width="100%"
-              height="550"
-              interval="15"
-            />
+              <h2 className="text-2xl font-bold mb-2">
+                {data.symbol}
+              </h2>
 
-          </div>
+              <p className="text-gray-400">
+                Live AI Market Analysis
+              </p>
 
-          {/* ANALYSIS PANEL */}
+            </div>
 
-          <div className="bg-gray-900 p-8 rounded-2xl shadow-2xl">
+            <div className="space-y-5">
 
-            {loading ? (
-
-              <div className="flex items-center justify-center h-full">
-
-                <p className="text-2xl text-yellow-400">
-                  Loading AI Analysis...
+              <div className="bg-black p-4 rounded-xl">
+                <p className="text-gray-400">Current Price</p>
+                <p className="text-yellow-400 text-4xl font-bold">
+                  {data.price}
                 </p>
-
               </div>
 
-            ) : data ? (
+              <div className="grid grid-cols-2 gap-4">
 
-              <>
-
-                <div className="mb-8">
-
-                  <h2 className="text-4xl font-bold text-white">
-                    {data.symbol}
-                  </h2>
-
-                  <p className="text-gray-400 mt-2">
-                    Live AI Market Insights
+                <div className="bg-black p-4 rounded-xl">
+                  <p className="text-gray-400">Prediction</p>
+                  <p className={`text-3xl font-bold ${
+                    data.prediction === "Bullish"
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }`}>
+                    {data.prediction}
                   </p>
-
                 </div>
 
-                <div className="space-y-5 text-lg">
-
-                  <div className="bg-black p-4 rounded-xl">
-
-                    <p className="text-gray-400">
-                      Current Price
-                    </p>
-
-                    <h3 className="text-3xl text-yellow-400 font-bold">
-                      {data.price}
-                    </h3>
-
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-
-                    <div className="bg-black p-4 rounded-xl">
-
-                      <p className="text-gray-400">
-                        Prediction
-                      </p>
-
-                      <h3 className={`text-2xl font-bold ${
-                        data.prediction === "Bullish"
-                          ? "text-green-400"
-                          : "text-red-400"
-                      }`}>
-
-                        {data.prediction}
-
-                      </h3>
-
-                    </div>
-
-                    <div className="bg-black p-4 rounded-xl">
-
-                      <p className="text-gray-400">
-                        Confidence
-                      </p>
-
-                      <h3 className="text-2xl text-blue-400 font-bold">
-                        {data.confidence}%
-                      </h3>
-
-                    </div>
-
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-
-                    <div className="bg-black p-4 rounded-xl">
-
-                      <p className="text-gray-400">
-                        RSI
-                      </p>
-
-                      <h3 className="text-xl">
-                        {data.rsi}
-                      </h3>
-
-                    </div>
-
-                    <div className="bg-black p-4 rounded-xl">
-
-                      <p className="text-gray-400">
-                        EMA
-                      </p>
-
-                      <h3 className="text-xl">
-                        {data.ema}
-                      </h3>
-
-                    </div>
-
-                  </div>
-
-                  <div className="bg-black p-4 rounded-xl">
-
-                    <p className="text-gray-400">
-                      MACD
-                    </p>
-
-                    <h3 className="text-xl">
-                      {data.macd}
-                    </h3>
-
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-
-                    <div className="bg-green-950 p-5 rounded-xl border border-green-700">
-
-                      <p className="text-green-300">
-                        Target
-                      </p>
-
-                      <h3 className="text-3xl font-bold text-green-400">
-                        {data.target}
-                      </h3>
-
-                    </div>
-
-                    <div className="bg-red-950 p-5 rounded-xl border border-red-700">
-
-                      <p className="text-red-300">
-                        Stop Loss
-                      </p>
-
-                      <h3 className="text-3xl font-bold text-red-400">
-                        {data.stop_loss}
-                      </h3>
-
-                    </div>
-
-                  </div>
-
-                  <div className="bg-black p-4 rounded-xl">
-
-                    <p className="text-gray-400">
-                      Market Strength
-                    </p>
-
-                    <h3 className="text-xl text-cyan-400">
-                      {data.strength}
-                    </h3>
-
-                  </div>
-
+                <div className="bg-black p-4 rounded-xl">
+                  <p className="text-gray-400">Confidence</p>
+                  <p className="text-blue-400 text-3xl font-bold">
+                    {data.confidence}%
+                  </p>
                 </div>
-
-              </>
-
-            ) : (
-
-              <div className="flex items-center justify-center h-full">
-
-                <p className="text-red-400 text-xl">
-                  Failed to load market data
-                </p>
 
               </div>
 
-            )}
+              <div className="grid grid-cols-2 gap-4">
+
+                <div className="bg-black p-4 rounded-xl">
+                  <p className="text-gray-400">RSI</p>
+                  <p className="text-2xl">{data.rsi}</p>
+                </div>
+
+                <div className="bg-black p-4 rounded-xl">
+                  <p className="text-gray-400">EMA</p>
+                  <p className="text-2xl">{data.ema}</p>
+                </div>
+
+              </div>
+
+              <div className="bg-black p-4 rounded-xl">
+                <p className="text-gray-400">MACD</p>
+                <p className="text-2xl">{data.macd}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+
+                <div className="bg-green-900 p-4 rounded-xl border border-green-500">
+                  <p className="text-green-300">Target</p>
+                  <p className="text-4xl font-bold text-green-400">
+                    {data.target}
+                  </p>
+                </div>
+
+                <div className="bg-red-900 p-4 rounded-xl border border-red-500">
+                  <p className="text-red-300">Stop Loss</p>
+                  <p className="text-4xl font-bold text-red-400">
+                    {data.stop_loss}
+                  </p>
+                </div>
+
+              </div>
+
+              <div className="bg-black p-4 rounded-xl">
+                <p className="text-gray-400">Market Strength</p>
+                <p className="text-cyan-400 text-2xl font-bold">
+                  {data.strength}
+                </p>
+              </div>
+
+            </div>
 
           </div>
-
-        </div>
+        )}
 
       </div>
 
